@@ -4,14 +4,23 @@ server:
 spring:
   application:
     name: api-gateway
-
+  
+  redis:
+    host: localhost
+    port: 6379
+  
   cloud:
     gateway:
       discovery:
         locator:
           enabled: true
           lower-case-service-id: true  # allows using /order-service/** etc.
-
+      default-filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter.replenishRate: 5      # 5 requests per second
+            redis-rate-limiter.burstCapacity: 10     # burst of 10
+            key-resolver: "#{@ipKeyResolver}"        # use IP as the key
       routes:
         - id: order-service
           uri: lb://order-service
