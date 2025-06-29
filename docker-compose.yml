@@ -1,0 +1,105 @@
+version: '3.8'
+
+services:
+
+  # Redis for Rate Limiting
+  redis:
+    image: redis
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - backend
+
+  # PostgreSQL with 4 databases initialized
+  postgres-db:
+    image: postgres:15
+    container_name: postgres-db
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: tiger
+    volumes:
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - backend
+
+  # Eureka Service Registry
+  eureka-server:
+    build:
+      context: ./eureka-server
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    networks:
+      - backend
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - eureka-server
+      - redis
+    networks:
+      - backend
+
+  # User Service
+  user-service:
+    build:
+      context: ./user-service
+    container_name: user-service
+    ports:
+      - "8081:8081"
+    depends_on:
+      - eureka-server
+      - postgres-db
+    networks:
+      - backend
+
+  # Restaurant Service
+  restaurant-service:
+    build:
+      context: ./restaurant-service
+    container_name: restaurant-service
+    ports:
+      - "8082:8082"
+    depends_on:
+      - eureka-server
+      - postgres-db
+    networks:
+      - backend
+
+  # Order Service
+  order-service:
+    build:
+      context: ./order-service
+    container_name: order-service
+    ports:
+      - "8083:8083"
+    depends_on:
+      - eureka-server
+      - postgres-db
+    networks:
+      - backend
+
+  # Payment Service
+  payment-service:
+    build:
+      context: ./payment-service
+    container_name: payment-service
+    ports:
+      - "8084:8084"
+    depends_on:
+      - eureka-server
+      - postgres-db
+    networks:
+      - backend
+
+networks:
+  backend:
